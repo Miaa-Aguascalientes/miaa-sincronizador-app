@@ -2207,7 +2207,7 @@ def ejecutar_sincronizacion_total():
                             else: clean_val = val
                             params[pg_col] = clean_val; sets.append(f'"{pg_col}" = :{pg_col}')
                     if sets:
-                        res = conn.execute(text(f'UPDATE public."Pozos" SET {", ".join(sets)} WHERE "ID" = :id'), params)
+                        res = conn.execute(text(f'UPDATE Agua_potable."Pozos" SET {", ".join(sets)} WHERE "ID" = :id'), params)
                         filas_pg += res.rowcount
         
         duracion = round(time.time() - start_time, 2)
@@ -2241,8 +2241,9 @@ with tab2:
     # Visualización básica de Postgres para no romper lógica
     p_pg = urllib.parse.quote_plus(DB_POSTGRES['pass'])
     eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['db']}")
-    df_pg = pd.read_sql('SELECT * FROM public."Pozos" LIMIT 500', eng_pg)
+    df_pg = pd.read_sql('SELECT * FROM Agua_potable."Pozos" LIMIT 500', eng_pg)
     st.dataframe(df_pg, use_container_width=True)
+
 
 
 
