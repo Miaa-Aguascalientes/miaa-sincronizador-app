@@ -8,6 +8,8 @@ import time
 import mysql.connector
 import pytz
 import numpy as np
+import os
+import psycopg2
 
 # --- 1. CONFIGURACIÓN ---
 zona_local = pytz.timezone('America/Mexico_City')
@@ -55,25 +57,43 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Credenciales
-[DB_SCADA]
-host = "miaa.mx"
-user = "miaamx_dashboard"
-password = "h97_p,NQPo=l"
-database = "miaamx_telemetria"
+# 1. CARGAR CREDENCIALES DESDE EL PANEL DE STREAMLIT (SECRETS)
+# Asegúrate de haber pegado los datos en el menú Settings > Secrets de Streamlit
+DB_SCADA = st.secrets["DB_SCADA"]
+DB_INFORME = st.secrets["DB_INFORME"]
+DB_POSTGRES = st.secrets["DB_POSTGRES"]
 
-[DB_INFORME]
-host = "miaa.mx"
-user = "miaamx_telemetria2"
-password = "bWkrw1Uum1O&"
-database = "miaamx_telemetria2"
+# --- FUNCIÓN PARA SCADA (La que faltaba) ---
+@st.cache_resource
+def get_scada_engine():
+    """Conexión a la base de datos miaamx_telemetria"""
+    user = DB_SCADA["user"]
+    pwd = urllib.parse.quote_plus(DB_SCADA["password"])
+    host = DB_SCADA["host"]
+    db = DB_SCADA["database"]
+    return create_engine(f"mysql+mysqlconnector://{user}:{pwd}@{host}/{db}")
 
-[DB_POSTGRES]
-user = "map_tecnica"
-password = "M144.Tec"
-host = "ti.miaa.mx"
-database = "qgis"
-port = 5432
+# --- FUNCIÓN PARA INFORME / HES ---
+@st.cache_resource
+def get_mysql_engine():
+    """Conexión a la base de datos miaamx_telemetria2 (HES)"""
+    user = DB_INFORME["user"]
+    pwd = urllib.parse.quote_plus(DB_INFORME["password"])
+    host = DB_INFORME["host"]
+    db = DB_INFORME["database"]
+    return create_engine(f"mysql+mysqlconnector://{user}:{pwd}@{host}/{db}")
+
+# --- FUNCIÓN PARA POSTGRES (QGIS) ---
+@st.cache_resource
+def get_postgres_conn():
+    """Conexión a la base de datos PostgreSQL de QGIS"""
+    return psycopg2.connect(
+        user=DB_POSTGRES["user"],
+        password=DB_POSTGRES["password"],
+        host=DB_POSTGRES["host"],
+        database=DB_POSTGRES["database"],
+        port=DB_POSTGRES["port"]
+    )
 
 CSV_URL = 'https://docs.google.com/spreadsheets/d/1tHh47x6DWZs_vCaSCHshYPJrQKUW7Pqj86NCVBxKnuw/gviz/tq?tqx=out:csv&sheet=informe'
 
@@ -2265,5 +2285,6 @@ with tab2:
     df_pg = pd.read_sql(query_pg, eng_pg)
     
     st.dataframe(df_pg, use_container_width=True)
+
 
 
