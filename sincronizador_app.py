@@ -8,8 +8,6 @@ import time
 import mysql.connector
 import pytz
 import numpy as np
-import os
-import psycopg2
 
 # --- 1. CONFIGURACIÓN ---
 zona_local = pytz.timezone('America/Mexico_City')
@@ -57,44 +55,10 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 1. CARGAR CREDENCIALES DESDE EL PANEL DE STREAMLIT (SECRETS)
-# Asegúrate de haber pegado los datos en el menú Settings > Secrets de Streamlit
-DB_SCADA = st.secrets["DB_SCADA"]
-DB_INFORME = st.secrets["DB_INFORME"]
-DB_POSTGRES = st.secrets["DB_POSTGRES"]
-
-# --- FUNCIÓN PARA SCADA (La que faltaba) ---
-@st.cache_resource
-def get_scada_engine():
-    """Conexión a la base de datos miaamx_telemetria"""
-    user = DB_SCADA["user"]
-    pwd = urllib.parse.quote_plus(DB_SCADA["password"])
-    host = DB_SCADA["host"]
-    db = DB_SCADA["database"]
-    return create_engine(f"mysql+mysqlconnector://{user}:{pwd}@{host}/{db}")
-
-# --- FUNCIÓN PARA INFORME / HES ---
-@st.cache_resource
-def get_mysql_engine():
-    """Conexión a la base de datos miaamx_telemetria2 (HES)"""
-    user = DB_INFORME["user"]
-    pwd = urllib.parse.quote_plus(DB_INFORME["password"])
-    host = DB_INFORME["host"]
-    db = DB_INFORME["database"]
-    return create_engine(f"mysql+mysqlconnector://{user}:{pwd}@{host}/{db}")
-
-# --- FUNCIÓN PARA POSTGRES (QGIS) ---
-@st.cache_resource
-def get_postgres_conn():
-    """Conexión a la base de datos PostgreSQL de QGIS"""
-    return psycopg2.connect(
-        user=DB_POSTGRES["user"],
-        password=DB_POSTGRES["password"], # Antes decía "password", esto está bien
-        host=DB_POSTGRES["host"],
-        database=DB_POSTGRES["database"], # Asegúrate que NO diga "db"
-        port=DB_POSTGRES["port"]
-    )
-
+# Credenciales
+DB_SCADA = {'host': 'miaa.mx', 'user': 'miaamx_dashboard', 'password': 'h97_p,NQPo=l', 'database': 'miaamx_telemetria'}
+DB_INFORME = {'host': 'miaa.mx', 'user': 'miaamx_telemetria2', 'password': 'bWkrw1Uum1O&', 'database': 'miaamx_telemetria2'}
+DB_POSTGRES = {'user': 'map_tecnica', 'pass': 'M144.Tec', 'host': 'ti.miaa.mx', 'db': 'qgis', 'port': 5432}
 CSV_URL = 'https://docs.google.com/spreadsheets/d/1tHh47x6DWZs_vCaSCHshYPJrQKUW7Pqj86NCVBxKnuw/gviz/tq?tqx=out:csv&sheet=informe'
 
 # Mapeos originales
@@ -2200,12 +2164,7 @@ def ejecutar_sincronizacion_total():
         logs.append(f"✅ Google Sheets: {len(df)} registros leídos.")
         progreso_bar.progress(40, text="Consultando Base de Datos SCADA... 40%")
         
-        conn_s = mysql.connector.connect(
-        host=DB_SCADA['host'],
-        user=DB_SCADA['user'],
-        password=DB_SCADA['password'],
-        database=DB_SCADA['database']
-)
+        conn_s = mysql.connector.connect(**DB_SCADA)
         all_tags = []
         for p_id in MAPEO_SCADA: all_tags.extend(MAPEO_SCADA[p_id].values())
         
@@ -2230,8 +2189,8 @@ def ejecutar_sincronizacion_total():
             df_sql.to_sql('INFORME', con=conn, if_exists='append', index=False)
         
         progreso_bar.progress(85, text="Sincronizando con QGIS (Postgres)... 85%")
-        p_pg = urllib.parse.quote_plus(DB_POSTGRES['password'])
-        eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['database']}")
+        p_pg = urllib.parse.quote_plus(DB_POSTGRES['pass'])
+        eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['db']}")
         
         with eng_pg.begin() as conn:
             for _, row in df.iterrows():
@@ -2282,19 +2241,14 @@ with tab2:
         st.rerun()
     
     # Visualización corregida para Postgres
-    p_pg = urllib.parse.quote_plus(DB_POSTGRES['password'])
-    eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['database']}")
+    p_pg = urllib.parse.quote_plus(DB_POSTGRES['pass'])
+    eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['db']}")
     
     # CAMBIO: Se ajustó el esquema a "Agua_potable" y se usa text() para evitar ProgrammingError
     query_pg = text('SELECT * FROM "Agua_potable"."Pozos" LIMIT 500')
     df_pg = pd.read_sql(query_pg, eng_pg)
     
     st.dataframe(df_pg, use_container_width=True)
-
-
-
-
-
 
 
 
