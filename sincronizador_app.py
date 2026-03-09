@@ -89,7 +89,7 @@ def get_postgres_conn():
     """Conexión a la base de datos PostgreSQL de QGIS"""
     return psycopg2.connect(
         user=DB_POSTGRES["user"],
-        password=DB_POSTGRES["password"], # Antes decía "password", esto está bien
+        password=DB_POSTGRES["pass"], # Antes decía "password", esto está bien
         host=DB_POSTGRES["host"],
         database=DB_POSTGRES["database"], # Asegúrate que NO diga "db"
         port=DB_POSTGRES["port"]
@@ -2285,6 +2285,7 @@ with tab2:
     df_pg = pd.read_sql(query_pg, eng_pg)
     
     st.dataframe(df_pg, use_container_width=True)
+
 
 
 
