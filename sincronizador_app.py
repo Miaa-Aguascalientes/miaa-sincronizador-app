@@ -55,10 +55,15 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# --- CARGAR CREDENCIALES SEGURAS ---
+DB_SCADA = st.secrets["DB_SCADA"]
+DB_INFORME = st.secrets["DB_INFORME"]
+DB_POSTGRES = st.secrets["DB_POSTGRES"]
+
 # Credenciales
 DB_SCADA = {'host': 'miaa.mx', 'user': 'miaamx_dashboard', 'password': 'h97_p,NQPo=l', 'database': 'miaamx_telemetria'}
 DB_INFORME = {'host': 'miaa.mx', 'user': 'miaamx_telemetria2', 'password': 'bWkrw1Uum1O&', 'database': 'miaamx_telemetria2'}
-DB_POSTGRES = {'user': 'map_tecnica', 'pass': 'M144.Tec', 'host': 'ti.miaa.mx', 'db': 'qgis', 'port': 5432}
+DB_POSTGRES = {'user': 'map_tecnica', 'password': 'M144.Tec', 'host': 'ti.miaa.mx', 'db': 'qgis', 'port': 5432}
 CSV_URL = 'https://docs.google.com/spreadsheets/d/1tHh47x6DWZs_vCaSCHshYPJrQKUW7Pqj86NCVBxKnuw/gviz/tq?tqx=out:csv&sheet=informe'
 
 # Mapeos originales
@@ -2189,7 +2194,7 @@ def ejecutar_sincronizacion_total():
             df_sql.to_sql('INFORME', con=conn, if_exists='append', index=False)
         
         progreso_bar.progress(85, text="Sincronizando con QGIS (Postgres)... 85%")
-        p_pg = urllib.parse.quote_plus(DB_POSTGRES['pass'])
+        p_pg = urllib.parse.quote_plus(DB_POSTGRES['password'])
         eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['db']}")
         
         with eng_pg.begin() as conn:
@@ -2241,7 +2246,7 @@ with tab2:
         st.rerun()
     
     # Visualización corregida para Postgres
-    p_pg = urllib.parse.quote_plus(DB_POSTGRES['pass'])
+    p_pg = urllib.parse.quote_plus(DB_POSTGRES['password'])
     eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['db']}")
     
     # CAMBIO: Se ajustó el esquema a "Agua_potable" y se usa text() para evitar ProgrammingError
@@ -2249,6 +2254,7 @@ with tab2:
     df_pg = pd.read_sql(query_pg, eng_pg)
     
     st.dataframe(df_pg, use_container_width=True)
+
 
 
 
