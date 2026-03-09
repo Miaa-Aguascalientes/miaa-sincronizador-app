@@ -2278,13 +2278,14 @@ with tab2:
     
     # Visualización corregida para Postgres
     p_pg = urllib.parse.quote_plus(DB_POSTGRES['password'])
-    eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['db']}")
+    eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['database']}")
     
     # CAMBIO: Se ajustó el esquema a "Agua_potable" y se usa text() para evitar ProgrammingError
     query_pg = text('SELECT * FROM "Agua_potable"."Pozos" LIMIT 500')
     df_pg = pd.read_sql(query_pg, eng_pg)
     
     st.dataframe(df_pg, use_container_width=True)
+
 
 
 
