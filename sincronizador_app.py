@@ -89,7 +89,7 @@ def get_postgres_conn():
     """Conexión a la base de datos PostgreSQL de QGIS"""
     return psycopg2.connect(
         user=DB_POSTGRES["user"],
-        pwd=DB_POSTGRES["password"], # Antes decía "password", esto está bien
+        password=DB_POSTGRES["password"], # Antes decía "password", esto está bien
         host=DB_POSTGRES["host"],
         database=DB_POSTGRES["database"], # Asegúrate que NO diga "db"
         port=DB_POSTGRES["port"]
@@ -2277,7 +2277,7 @@ with tab2:
         st.rerun()
     
     # Visualización corregida para Postgres
-    p_pg = urllib.parse.quote_plus(DB_POSTGRES['pass'])
+    p_pg = urllib.parse.quote_plus(DB_POSTGRES['password'])
     eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['db']}")
     
     # CAMBIO: Se ajustó el esquema a "Agua_potable" y se usa text() para evitar ProgrammingError
@@ -2285,6 +2285,7 @@ with tab2:
     df_pg = pd.read_sql(query_pg, eng_pg)
     
     st.dataframe(df_pg, use_container_width=True)
+
 
 
 
