@@ -2200,7 +2200,12 @@ def ejecutar_sincronizacion_total():
         logs.append(f"✅ Google Sheets: {len(df)} registros leídos.")
         progreso_bar.progress(40, text="Consultando Base de Datos SCADA... 40%")
         
-        conn_s = mysql.connector.connect(**DB_SCADA)
+        conn_s = mysql.connector.connect(
+        host=DB_SCADA['host'],
+        user=DB_SCADA['user'],
+        password=DB_SCADA['password'],
+        database=DB_SCADA['database']
+)
         all_tags = []
         for p_id in MAPEO_SCADA: all_tags.extend(MAPEO_SCADA[p_id].values())
         
@@ -2285,6 +2290,7 @@ with tab2:
     df_pg = pd.read_sql(query_pg, eng_pg)
     
     st.dataframe(df_pg, use_container_width=True)
+
 
 
 
