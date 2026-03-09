@@ -2225,8 +2225,8 @@ def ejecutar_sincronizacion_total():
             df_sql.to_sql('INFORME', con=conn, if_exists='append', index=False)
         
         progreso_bar.progress(85, text="Sincronizando con QGIS (Postgres)... 85%")
-        p_pg = urllib.parse.quote_plus(DB_POSTGRES['pass'])
-        eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['db']}")
+        p_pg = urllib.parse.quote_plus(DB_POSTGRES['password'])
+        eng_pg = create_engine(f"postgresql://{DB_POSTGRES['user']}:{p_pg}@{DB_POSTGRES['host']}:{DB_POSTGRES['port']}/{DB_POSTGRES['database']}")
         
         with eng_pg.begin() as conn:
             for _, row in df.iterrows():
@@ -2285,6 +2285,7 @@ with tab2:
     df_pg = pd.read_sql(query_pg, eng_pg)
     
     st.dataframe(df_pg, use_container_width=True)
+
 
 
 
