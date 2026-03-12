@@ -1,4 +1,4 @@
-name: Despierta Streamlit
+name: Despierta la aplicacion sincronizadora Streamlit
 
 on:
   schedule:
