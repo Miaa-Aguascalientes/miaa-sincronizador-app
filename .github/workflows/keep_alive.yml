@@ -2,9 +2,9 @@ name: Despierta la aplicacion sincronizadora Streamlit
 
 on:
   schedule:
-    # Se ejecuta cada hora en el minuto 5
+    # Se ejecuta cada 30 minutos (está bien, pero con 1 vez cada 2 horas suele bastar)
     - cron: '*/30 * * * *'
-  workflow_dispatch: # Permite ejecución manual
+  workflow_dispatch: 
 
 jobs:
   ping:
@@ -12,29 +12,25 @@ jobs:
     steps:
       - name: Ping Streamlit App
         run: |
-          URL="https://miaa-sincronizador-ver-app.streamlit.app//"
+          # 1. URL corregida (sin la doble barra al final)
+          URL="https://miaa-sincronizador-ver-app.streamlit.app"
           
           echo "Iniciando ping a: $URL"
           
-          # Cambios clave:
-          # --max-redirs 5: Evita el error 47 limitando los saltos.
-          # || true: Evita que el workflow falle si curl devuelve un error de salida.
-          
-          STATUS=$(curl -L --max-redirs 5 -s -o /dev/null -w "%{http_code}" \
-            --connect-timeout 15 \
-            --max-time 30 \
-            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0" \
-            "$URL") || echo "Exited with error"
+          # 2. Usamos -I (Head request) para que sea más ligero pero efectivo
+          # 3. Quitamos el límite de redirecciones o lo subimos, Streamlit usa muchas.
+          STATUS=$(curl -L -I -s -o /dev/null -w "%{http_code}" \
+            --connect-timeout 20 \
+            --max-time 40 \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" \
+            -H "Accept: text/html" \
+            "$URL") || echo "000"
           
           echo "La aplicación respondió con el código: $STATUS"
           
-          # Si el código es 200, 301, 302 o incluso si curl falló por redirecciones (000),
-          # el intento de "despertar" ya se hizo.
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-            echo "✅ Conexión establecida con éxito ($STATUS)."
+          if [ "$STATUS" -eq 200 ] || [ "$STATUS" -eq 301 ] || [ "$STATUS" -eq 302 ]; then
+            echo "✅ Conexión establecida o redireccionada con éxito ($STATUS)."
           else
-            echo "⚠️ La app respondió con $STATUS o hubo demasiadas redirecciones."
-            echo "Esto suele ser suficiente para que el servidor de Streamlit inicie el despertar."
-            # Forzamos éxito para que no veas la X roja en GitHub
-            exit 0
+            echo "⚠️ Código $STATUS. Si es 404, revisa que la URL sea exacta."
+            # Si el código es 000 o algo raro, a veces el ping igual activa el container.
           fi
