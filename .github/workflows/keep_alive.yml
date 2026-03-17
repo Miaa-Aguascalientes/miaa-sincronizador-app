@@ -1,36 +1,50 @@
-name: Despierta la aplicacion sincronizadora Streamlit
+name: Despertar Real Lecturas HES
 
 on:
   schedule:
-    # Se ejecuta cada 30 minutos (está bien, pero con 1 vez cada 2 horas suele bastar)
-    - cron: '*/30 * * * *'
-  workflow_dispatch: 
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
 
 jobs:
-  ping:
+  wake-up:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
     steps:
-      - name: Ping Streamlit App
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24' # <--- Actualizamos a la versión 24 para quitar el aviso
+
+      - name: Install Playwright
         run: |
-          # 1. URL corregida (sin la doble barra al final)
-          URL="https://miaa-sincronizador-ver-app.streamlit.app"
-          
-          echo "Iniciando ping a: $URL"
-          
-          # 2. Usamos -I (Head request) para que sea más ligero pero efectivo
-          # 3. Quitamos el límite de redirecciones o lo subimos, Streamlit usa muchas.
-          STATUS=$(curl -L -I -s -o /dev/null -w "%{http_code}" \
-            --connect-timeout 20 \
-            --max-time 40 \
-            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" \
-            -H "Accept: text/html" \
-            "$URL") || echo "000"
-          
-          echo "La aplicación respondió con el código: $STATUS"
-          
-          if [ "$STATUS" -eq 200 ] || [ "$STATUS" -eq 301 ] || [ "$STATUS" -eq 302 ]; then
-            echo "✅ Conexión establecida o redireccionada con éxito ($STATUS)."
-          else
-            echo "⚠️ Código $STATUS. Si es 404, revisa que la URL sea exacta."
-            # Si el código es 000 o algo raro, a veces el ping igual activa el container.
-          fi
+          npm init -y
+          npm install playwright
+          npx playwright install chromium --with-deps
+
+      - name: Navegar a la App (Modo Invisible)
+        run: |
+          node -e "
+          const { chromium } = require('playwright');
+          (async () => {
+            try {
+              const browser = await chromium.launch({ headless: true });
+              const page = await browser.newPage();
+              console.log('Iniciando navegación...');
+              await page.goto('https://miaa-sincronizador-ver-app.streamlit.app/', { 
+                waitUntil: 'networkidle', 
+                timeout: 60000 
+              });
+              console.log('App cargada. Esperando validación...');
+              await new Promise(r => setTimeout(r, 10000));
+              await browser.close();
+              console.log('✅ Aplicación despertada con éxito.');
+            } catch (err) {
+              console.error('❌ Error:', err);
+              process.exit(1);
+            }
+          })();
+          "
