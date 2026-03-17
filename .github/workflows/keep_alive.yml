@@ -2,8 +2,8 @@ name: Despertar Sincronizador app
 
 on:
   schedule:
-    - cron: '*/15 * * * *' # Se ejecuta cada 15 minutos
-  workflow_dispatch: # Permite ejecución manual
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 jobs:
   wake-up-miaa:
@@ -25,45 +25,46 @@ jobs:
           npm install playwright
           npx playwright install chromium --with-deps
 
-      - name: Forzar Despertar MIAA
+      - name: Ejecutar Despertar de Alta Intensidad
         run: |
           node -e "
           const { chromium } = require('playwright');
           (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const context = await browser.newContext({
+              viewport: { width: 1280, height: 720 },
+              deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            
             try {
-              const browser = await chromium.launch({ headless: true });
-              const page = await browser.newPage();
+              console.log('Navegando a la App MIAA...');
               
-              // Simular un navegador real
-              await page.setExtraHTTPHeaders({
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-              });
-
-              console.log('Intentando despertar: https://miaa-sincronizador-ver-app.streamlit.app');
-              
-              // Tiempo de espera extendido a 2 minutos para el booteo inicial
+              // 1. Intentamos cargar la página con un tiempo de espera largo
               await page.goto('https://miaa-sincronizador-ver-app.streamlit.app', { 
-                waitUntil: 'networkidle', 
-                timeout: 120000 
+                waitUntil: 'domcontentloaded', 
+                timeout: 100000 
               });
 
-              // Esperamos a que aparezca cualquier elemento de la interfaz de Streamlit
-              await page.waitForSelector('body');
+              // 2. Esperamos un poco para que aparezca el botón de 'Wake up' si es que existe
+              await new Promise(r => setTimeout(r, 15000));
+
+              // 3. SIMULACIÓN HUMANA: Hacemos clics aleatorios para forzar el despertar
+              console.log('Simulando interacción humana...');
+              await page.mouse.click(500, 500);
+              await page.mouse.wheel(0, 400);
+              await new Promise(r => setTimeout(r, 5000));
+              await page.mouse.click(300, 300);
               
-              // Realizamos movimientos para activar los WebSockets
-              await page.mouse.move(100, 100);
-              await page.mouse.move(200, 200);
-              await page.evaluate(() => window.scrollBy(0, 300));
-              
-              console.log('Interacción completada. Esperando renderizado...');
-              
-              // Permanecemos 30 segundos para asegurar que el contenedor no se cierre
+              // 4. Esperamos a que el sistema de Streamlit registre la sesión activa
+              console.log('Esperando confirmación de servidor...');
               await new Promise(r => setTimeout(r, 30000));
               
               await browser.close();
-              console.log('✅ Aplicación MIAA Sincronizador despertada con éxito.');
+              console.log('✅ Intento de despertar completado para MIAA.');
             } catch (err) {
-              console.error('❌ Error al intentar despertar la app:', err);
+              console.error('❌ Error crítico:', err);
+              await browser.close();
               process.exit(1);
             }
           })();
