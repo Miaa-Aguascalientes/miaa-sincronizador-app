@@ -2,11 +2,11 @@ name: Despertar Sincronizador app
 
 on:
   schedule:
-    - cron: '*/20 * * * *'
-  workflow_dispatch:
+    - cron: '*/15 * * * *' # Se ejecuta cada 15 minutos
+  workflow_dispatch: # Permite ejecución manual
 
 jobs:
-  wake-up:
+  wake-up-miaa:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24' # <--- Actualizamos a la versión 24 para quitar el aviso
+          node-version: '24'
 
       - name: Install Playwright
         run: |
@@ -25,7 +25,7 @@ jobs:
           npm install playwright
           npx playwright install chromium --with-deps
 
-      - name: Navegar a la App (Modo Invisible)
+      - name: Forzar Despertar MIAA
         run: |
           node -e "
           const { chromium } = require('playwright');
@@ -33,17 +33,37 @@ jobs:
             try {
               const browser = await chromium.launch({ headless: true });
               const page = await browser.newPage();
-              console.log('Iniciando navegación...');
-              await page.goto('https://miaa-sincronizador-ver-app.streamlit.app/', { 
-                waitUntil: 'networkidle', 
-                timeout: 60000 
+              
+              // Simular un navegador real
+              await page.setExtraHTTPHeaders({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
               });
-              console.log('App cargada. Esperando validación...');
-              await new Promise(r => setTimeout(r, 10000));
+
+              console.log('Intentando despertar: https://miaa-sincronizador-ver-app.streamlit.app');
+              
+              // Tiempo de espera extendido a 2 minutos para el booteo inicial
+              await page.goto('https://miaa-sincronizador-ver-app.streamlit.app', { 
+                waitUntil: 'networkidle', 
+                timeout: 120000 
+              });
+
+              // Esperamos a que aparezca cualquier elemento de la interfaz de Streamlit
+              await page.waitForSelector('body');
+              
+              // Realizamos movimientos para activar los WebSockets
+              await page.mouse.move(100, 100);
+              await page.mouse.move(200, 200);
+              await page.evaluate(() => window.scrollBy(0, 300));
+              
+              console.log('Interacción completada. Esperando renderizado...');
+              
+              // Permanecemos 30 segundos para asegurar que el contenedor no se cierre
+              await new Promise(r => setTimeout(r, 30000));
+              
               await browser.close();
-              console.log('✅ Aplicación despertada con éxito.');
+              console.log('✅ Aplicación MIAA Sincronizador despertada con éxito.');
             } catch (err) {
-              console.error('❌ Error:', err);
+              console.error('❌ Error al intentar despertar la app:', err);
               process.exit(1);
             }
           })();
